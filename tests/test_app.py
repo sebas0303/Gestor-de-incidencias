@@ -143,3 +143,67 @@ def test_aislamiento_incidencias_entre_usuarios(client, monkeypatch):
     assert secreto not in texto_maria
 
 
+def test_panel_tecnico_filtros_y_actualizacion(client, monkeypatch):
+    """El técnico puede filtrar todas las incidencias y corregir categoría, prioridad y estado."""
+    monkeypatch.setattr(
+        clasificador,
+        "obtener_cliente",
+        lambda: (_ for _ in ()).throw(ConnectionError("Sin IA")),
+    )
+
+    # Dos usuarios registran incidencias
+    client.post("/login", data={"username": "usuario", "password": "usuario123"})
+    client.post("/incidencias", data={"observacion": "Fallo en monitor externo"})
+    client.get("/logout")
+
+    client.post("/login", data={"username": "maria", "password": "maria123"})
+    client.post("/incidencias", data={"observacion": "Cuenta de correo bloqueada"})
+
+    # Un usuario sin rol técnico tampoco puede modificar incidencias por POST
+    resp_prohibido = client.post(
+        "/tecnico/incidencias/1",
+        data={"categoria": "hardware", "prioridad": "alta", "estado": "en curso"},
+    )
+    assert resp_prohibido.status_code == 403
+    client.get("/logout")
+
+    # Inicia sesión el técnico y ve ambas incidencias
+    client.post("/login", data={"username": "tecnico", "password": "tecnico123"})
+    resp_todas = client.get("/tecnico")
+    texto_todas = resp_todas.data.decode("utf-8")
+    assert "Fallo en monitor externo" in texto_todas
+    assert "Cuenta de correo bloqueada" in texto_todas
+
+    # El técnico corrige la incidencia #1: categoria=hardware, prioridad=alta, estado='en curso'
+    resp_edit = client.post(
+        "/tecnico/incidencias/1",
+        data={"categoria": "hardware", "prioridad": "alta", "estado": "en curso"},
+        follow_redirects=True,
+    )
+    assert resp_edit.status_code == 200
+    assert "Incidencia #1 actualizada" in resp_edit.data.decode("utf-8")
+
+    # Filtrar por categoria=hardware y estado='en curso' muestra solo la incidencia #1
+    resp_filtro = client.get(
+        "/tecnico?categoria=hardware&prioridad=alta&estado=en+curso"
+    )
+    texto_filtro = resp_filtro.data.decode("utf-8")
+    assert "Fallo en monitor externo" in texto_filtro
+    assert "Cuenta de correo bloqueada" not in texto_filtro
+
+    # Cambiar a 'resuelta' y comprobar que el usuario ve el nuevo estado
+    client.post(
+        "/tecnico/incidencias/1",
+        data={"categoria": "hardware", "prioridad": "alta", "estado": "resuelta"},
+        follow_redirects=True,
+    )
+    client.get("/logout")
+
+    client.post("/login", data={"username": "usuario", "password": "usuario123"})
+    resp_usuario = client.get("/incidencias")
+    texto_usuario = resp_usuario.data.decode("utf-8")
+    assert "resuelta" in texto_usuario
+    assert "hardware" in texto_usuario
+
+
+

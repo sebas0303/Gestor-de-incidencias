@@ -31,6 +31,10 @@ USUARIOS_PRUEBA = [
     ("tecnico", "tecnico123", "tecnico"),
 ]
 
+CATEGORIAS_INCIDENCIA = ("hardware", "software", "red", "cuenta", "revisar")
+PRIORIDADES_INCIDENCIA = ("baja", "media", "alta")
+ESTADOS_INCIDENCIA = ("abierta", "en curso", "resuelta")
+
 
 def obtener_db() -> sqlite3.Connection:
     """Devuelve la conexión SQLite asociada a la petición actual."""
@@ -121,5 +125,60 @@ def obtener_incidencias_usuario(usuario_id: int) -> list[sqlite3.Row]:
         """,
         (usuario_id,),
     ).fetchall()
+
+
+def obtener_todas_incidencias(
+    categoria: str | None = None,
+    prioridad: str | None = None,
+    estado: str | None = None,
+) -> list[sqlite3.Row]:
+    """Devuelve todas las incidencias para el panel del técnico, con filtros opcionales."""
+    db = obtener_db()
+    consulta = """
+        SELECT i.id, i.fecha, i.usuario_id, u.username AS usuario,
+               i.observacion, i.categoria, i.prioridad, i.resumen, i.estado
+        FROM incidencias i
+        JOIN usuarios u ON i.usuario_id = u.id
+        WHERE 1=1
+    """
+    parametros: list[str] = []
+
+    if categoria and categoria in CATEGORIAS_INCIDENCIA:
+        consulta += " AND i.categoria = ?"
+        parametros.append(categoria)
+    if prioridad and prioridad in PRIORIDADES_INCIDENCIA:
+        consulta += " AND i.prioridad = ?"
+        parametros.append(prioridad)
+    if estado and estado in ESTADOS_INCIDENCIA:
+        consulta += " AND i.estado = ?"
+        parametros.append(estado)
+
+    consulta += " ORDER BY i.id DESC"
+    return db.execute(consulta, parametros).fetchall()
+
+
+def actualizar_incidencia(
+    incidencia_id: int, categoria: str, prioridad: str, estado: str
+) -> bool:
+    """Actualiza la categoría, prioridad y estado de una incidencia."""
+    if (
+        categoria not in CATEGORIAS_INCIDENCIA
+        or prioridad not in PRIORIDADES_INCIDENCIA
+        or estado not in ESTADOS_INCIDENCIA
+    ):
+        return False
+
+    db = obtener_db()
+    cursor = db.execute(
+        """
+        UPDATE incidencias
+        SET categoria = ?, prioridad = ?, estado = ?
+        WHERE id = ?
+        """,
+        (categoria, prioridad, estado, incidencia_id),
+    )
+    db.commit()
+    return cursor.rowcount > 0
+
 
 

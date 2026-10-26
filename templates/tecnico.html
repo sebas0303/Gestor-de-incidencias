@@ -4,8 +4,95 @@
 
 {% block content %}
 <section class="tarjeta">
-    <h2>Panel del técnico</h2>
-    <p>Bienvenido al panel técnico, <strong>{{ session.get('username') }}</strong>.</p>
+    <h2>Panel del técnico — Filtros</h2>
+    <form method="get" action="{{ url_for('panel_tecnico') }}" class="formulario-filtros">
+        <div class="campo">
+            <label for="filtro-categoria">Categoría</label>
+            <select id="filtro-categoria" name="categoria">
+                <option value="">Todas</option>
+                {% for cat in categorias %}
+                    <option value="{{ cat }}" {% if filtro_categoria == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="filtro-prioridad">Prioridad</label>
+            <select id="filtro-prioridad" name="prioridad">
+                <option value="">Todas</option>
+                {% for prio in prioridades %}
+                    <option value="{{ prio }}" {% if filtro_prioridad == prio %}selected{% endif %}>{{ prio }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="filtro-estado">Estado</label>
+            <select id="filtro-estado" name="estado">
+                <option value="">Todos</option>
+                {% for est in estados %}
+                    <option value="{{ est }}" {% if filtro_estado == est %}selected{% endif %}>{{ est }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="acciones-filtro">
+            <button type="submit" class="boton boton-primario">Filtrar</button>
+            <a href="{{ url_for('panel_tecnico') }}" class="boton boton-secundario">Limpiar</a>
+        </div>
+    </form>
+</section>
+
+<section class="tarjeta">
+    <h2>Listado de incidencias ({{ incidencias|length }})</h2>
+    {% if incidencias %}
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Observación</th>
+                        <th>Resumen</th>
+                        <th>Categoría / Prioridad / Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inc in incidencias %}
+                        <tr>
+                            <td>#{{ inc['id'] }}</td>
+                            <td>{{ inc['fecha'] }}</td>
+                            <td><strong>{{ inc['usuario'] }}</strong></td>
+                            <td>{{ inc['observacion'] }}</td>
+                            <td>{{ inc['resumen'] }}</td>
+                            <td>
+                                <form method="post" action="{{ url_for('editar_incidencia', incidencia_id=inc['id']) }}" class="formulario-linea">
+                                    <select name="categoria" aria-label="Categoría incidencia {{ inc['id'] }}">
+                                        {% for cat in categorias %}
+                                            <option value="{{ cat }}" {% if inc['categoria'] == cat %}selected{% endif %}>{{ cat }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <select name="prioridad" aria-label="Prioridad incidencia {{ inc['id'] }}">
+                                        {% for prio in prioridades %}
+                                            <option value="{{ prio }}" {% if inc['prioridad'] == prio %}selected{% endif %}>{{ prio }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <select name="estado" aria-label="Estado incidencia {{ inc['id'] }}">
+                                        {% for est in estados %}
+                                            <option value="{{ est }}" {% if inc['estado'] == est %}selected{% endif %}>{{ est }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="boton boton-primario boton-pequeno">Guardar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="texto-vacio">No hay incidencias que coincidan con los filtros seleccionados.</p>
+    {% endif %}
 </section>
 {% endblock %}
-

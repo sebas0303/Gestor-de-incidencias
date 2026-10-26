@@ -13,11 +13,16 @@ from flask import (
 
 from clasificador import clasificar
 from db import (
+    CATEGORIAS_INCIDENCIA,
+    ESTADOS_INCIDENCIA,
+    PRIORIDADES_INCIDENCIA,
+    actualizar_incidencia,
     autenticar_usuario,
     cerrar_db,
     crear_incidencia,
     inicializar_db,
     obtener_incidencias_usuario,
+    obtener_todas_incidencias,
 )
 
 RUTA_BASE = Path(__file__).resolve().parent
@@ -119,7 +124,39 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.route("/tecnico")
     @rol_requerido("tecnico")
     def panel_tecnico():
-        return render_template("tecnico.html")
+        filtro_categoria = request.args.get("categoria", "").strip()
+        filtro_prioridad = request.args.get("prioridad", "").strip()
+        filtro_estado = request.args.get("estado", "").strip()
+
+        incidencias = obtener_todas_incidencias(
+            categoria=filtro_categoria or None,
+            prioridad=filtro_prioridad or None,
+            estado=filtro_estado or None,
+        )
+        return render_template(
+            "tecnico.html",
+            incidencias=incidencias,
+            categorias=CATEGORIAS_INCIDENCIA,
+            prioridades=PRIORIDADES_INCIDENCIA,
+            estados=ESTADOS_INCIDENCIA,
+            filtro_categoria=filtro_categoria,
+            filtro_prioridad=filtro_prioridad,
+            filtro_estado=filtro_estado,
+        )
+
+    @app.route("/tecnico/incidencias/<int:incidencia_id>", methods=["POST"])
+    @rol_requerido("tecnico")
+    def editar_incidencia(incidencia_id: int):
+        categoria = request.form.get("categoria", "").strip()
+        prioridad = request.form.get("prioridad", "").strip()
+        estado = request.form.get("estado", "").strip()
+
+        if actualizar_incidencia(incidencia_id, categoria, prioridad, estado):
+            flash(f"Incidencia #{incidencia_id} actualizada correctamente.", "exito")
+        else:
+            flash("Datos no válidos para actualizar la incidencia.", "error")
+
+        return redirect(url_for("panel_tecnico"))
 
     return app
 
