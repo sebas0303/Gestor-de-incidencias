@@ -11,6 +11,7 @@ from flask import (
     url_for,
 )
 
+from clasificador import clasificar
 from db import (
     autenticar_usuario,
     cerrar_db,
@@ -101,11 +102,13 @@ def create_app(test_config: dict | None = None) -> Flask:
             if not observacion:
                 flash("La observación no puede estar vacía.", "error")
             else:
+                resultado = clasificar(observacion)
                 crear_incidencia(
                     usuario_id=session["usuario_id"],
                     observacion=observacion,
-                    categoria="revisar",
-                    prioridad="media",
+                    categoria=resultado["categoria"],
+                    prioridad=resultado["prioridad"],
+                    resumen=resultado["resumen"],
                 )
                 flash("Incidencia registrada correctamente.", "exito")
                 return redirect(url_for("mis_incidencias"))

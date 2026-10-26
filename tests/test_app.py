@@ -1,4 +1,7 @@
+import json
 import sqlite3
+from types import SimpleNamespace
+import clasificador
 
 
 def test_usuarios_iniciales_y_hash(app):
@@ -63,8 +66,12 @@ def test_login_credenciales_invalidas(client):
     assert resp.status_code == 401
 
 
-def test_registrar_incidencia_y_listar(client):
-    """El usuario puede registrar una incidencia con un único campo Observación y verla en su lista."""
+def test_registrar_incidencia_con_lmstudio_parado_no_da_500(client, monkeypatch):
+    """Criterio 1: Con LM Studio parado, registrar una incidencia no da error 500 y se guarda con categoria 'revisar'."""
+    def _cliente_caido():
+        raise ConnectionError("LM Studio parado")
+
+    monkeypatch.setattr(clasificador, "obtener_cliente", _cliente_caido)
     client.post("/login", data={"username": "usuario", "password": "usuario123"})
 
     observacion = "No puedo acceder a la carpeta compartida del departamento"
@@ -80,8 +87,48 @@ def test_registrar_incidencia_y_listar(client):
     assert "abierta" in texto
 
 
-def test_aislamiento_incidencias_entre_usuarios(client):
+def test_registrar_incidencia_clasifica_automaticamente(client, monkeypatch):
+    """Al registrar una incidencia con LM Studio activo (simulado), se guarda su categoría, prioridad y resumen."""
+    respuesta_ia = json.dumps(
+        {
+            "categoria": "hardware",
+            "prioridad": "alta",
+            "resumen": "El portátil no arranca ni enciende el LED.",
+        }
+    )
+    mock_cliente = SimpleNamespace(
+        chat=SimpleNamespace(
+            completions=SimpleNamespace(
+                create=lambda **kwargs: SimpleNamespace(
+                    choices=[SimpleNamespace(message=SimpleNamespace(content=respuesta_ia))]
+                )
+            )
+        )
+    )
+    monkeypatch.setattr(clasificador, "obtener_cliente", lambda: mock_cliente)
+
+    client.post("/login", data={"username": "usuario", "password": "usuario123"})
+    observacion = "No arranca el portátil, no enciende ni el led"
+    resp = client.post(
+        "/incidencias",
+        data={"observacion": observacion},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    texto = resp.data.decode("utf-8")
+    assert observacion in texto
+    assert "hardware" in texto
+    assert "alta" in texto
+    assert "El portátil no arranca ni enciende el LED." in texto
+
+
+def test_aislamiento_incidencias_entre_usuarios(client, monkeypatch):
     """Criterio 3: Un usuario no puede ver las incidencias de otro usuario."""
+    monkeypatch.setattr(
+        clasificador,
+        "obtener_cliente",
+        lambda: (_ for _ in ()).throw(ConnectionError("Sin IA en test de aislamiento")),
+    )
     # 'usuario' registra una incidencia privada
     client.post("/login", data={"username": "usuario", "password": "usuario123"})
     secreto = "Incidencia exclusiva del primer usuario"

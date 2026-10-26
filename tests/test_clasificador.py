@@ -120,3 +120,4 @@ def test_variables_entorno_lmstudio(monkeypatch):
     url2, modelo2 = clasificador.obtener_configuracion()
     assert url2 == "http://localhost:1234/v1"
     assert modelo2 == "qwen2.5-7b-instruct"
+

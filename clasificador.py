@@ -36,7 +36,7 @@ ESQUEMA_CLASIFICACION = {
 }
 
 PROMPT_SISTEMA = (
-    "Eres un asistente técnico que clasifica incidencias informáticas. "
+    "Eres un asistente técnico experto que clasifica incidencias informáticas. "
     "Devuelve únicamente un objeto JSON válido según el esquema indicado con:\n"
     "- categoria: 'hardware' (fallos físicos, encendido, pantalla, periféricos), "
     "'software' (aplicaciones, sistema operativo, errores de programas), "
@@ -57,7 +57,7 @@ def obtener_configuracion() -> tuple[str, str]:
 def obtener_cliente() -> OpenAI:
     """Crea el cliente OpenAI apuntando siempre al servidor local de LM Studio."""
     url, _ = obtener_configuracion()
-    return OpenAI(base_url=url, api_key="lm-studio")
+    return OpenAI(base_url=url, api_key="lm-studio", max_retries=0, timeout=10.0)
 
 
 def _resumen_fallback(observacion: str) -> str:
@@ -139,3 +139,4 @@ def clasificar(observacion: str, cliente: OpenAI | None = None) -> dict[str, str
             return validado
 
     return _resultado_fallback(observacion)
+
