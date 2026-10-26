@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar sesión - Gestor de Incidencias{% endblock %}
+
+{% block content %}
+<section class="tarjeta tarjeta-login">
+    <h2>Iniciar sesión</h2>
+    <form method="post" action="{{ url_for('login') }}" class="formulario">
+        <div class="campo">
+            <label for="username">Usuario</label>
+            <input type="text" id="username" name="username" required autofocus>
+        </div>
+        <div class="campo">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="boton boton-primario">Entrar</button>
+    </form>
+
+    <div class="ayuda-usuarios">
+        <p><strong>Usuarios de prueba disponibles:</strong></p>
+        <ul>
+            <li>Rol usuario: <code>usuario</code> / <code>usuario123</code> (o <code>maria</code> / <code>maria123</code>)</li>
+            <li>Rol técnico: <code>tecnico</code> / <code>tecnico123</code></li>
+        </ul>
+    </div>
+</section>
+{% endblock %}
+

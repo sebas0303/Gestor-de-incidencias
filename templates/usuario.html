@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Incidencias - Gestor de Incidencias{% endblock %}
+
+{% block content %}
+<section class="tarjeta">
+    <h2>Área de usuario</h2>
+    <p>Bienvenido, <strong>{{ session.get('username') }}</strong>. En el siguiente paso podrás registrar y consultar tus incidencias aquí.</p>
+</section>
+{% endblock %}
+

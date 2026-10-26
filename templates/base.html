@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestor de Incidencias{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+</head>
+<body>
+    <header class="barra-superior">
+        <div class="contenedor barra-contenido">
+            <h1 class="titulo-app">Gestor de Incidencias</h1>
+            {% if session.get('usuario_id') %}
+            <nav class="navegacion">
+                <span class="info-usuario">
+                    Conectado como <strong>{{ session.get('username') }}</strong>
+                    <span class="insignia-rol">{{ session.get('rol') }}</span>
+                </span>
+                {% if session.get('rol') == 'tecnico' %}
+                    <a href="{{ url_for('panel_tecnico') }}" class="enlace-nav">Panel técnico</a>
+                {% endif %}
+                <a href="{{ url_for('mis_incidencias') }}" class="enlace-nav">Mis incidencias</a>
+                <a href="{{ url_for('logout') }}" class="boton boton-secundario">Cerrar sesión</a>
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="contenedor contenido-principal">
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+            {% if mensajes %}
+                <div class="mensajes-flash">
+                    {% for categoria, mensaje in mensajes %}
+                        <div class="alerta alerta-{{ categoria }}">{{ mensaje }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
+
