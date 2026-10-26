@@ -1,4 +1,4 @@
-# Gestor de Incidencias con Clasificación IA (LM Studio)
+# Gestor de Incidencias y Clasificación con IA (LM Studio)
 
 Aplicación web en Python (Flask + SQLite) para registrar y gestionar incidencias informáticas. El usuario solo escribe la observación del problema y la aplicación la clasifica automáticamente (categoría, prioridad y resumen) mediante un modelo local ejecutado en **LM Studio**.
 
