@@ -11,7 +11,13 @@ from flask import (
     url_for,
 )
 
-from db import autenticar_usuario, cerrar_db, inicializar_db
+from db import (
+    autenticar_usuario,
+    cerrar_db,
+    crear_incidencia,
+    inicializar_db,
+    obtener_incidencias_usuario,
+)
 
 RUTA_BASE = Path(__file__).resolve().parent
 
@@ -87,10 +93,25 @@ def create_app(test_config: dict | None = None) -> Flask:
         session.clear()
         return redirect(url_for("login"))
 
-    @app.route("/incidencias")
+    @app.route("/incidencias", methods=["GET", "POST"])
     @login_requerido
     def mis_incidencias():
-        return render_template("usuario.html")
+        if request.method == "POST":
+            observacion = request.form.get("observacion", "").strip()
+            if not observacion:
+                flash("La observación no puede estar vacía.", "error")
+            else:
+                crear_incidencia(
+                    usuario_id=session["usuario_id"],
+                    observacion=observacion,
+                    categoria="revisar",
+                    prioridad="media",
+                )
+                flash("Incidencia registrada correctamente.", "exito")
+                return redirect(url_for("mis_incidencias"))
+
+        incidencias = obtener_incidencias_usuario(session["usuario_id"])
+        return render_template("usuario.html", incidencias=incidencias)
 
     @app.route("/tecnico")
     @rol_requerido("tecnico")

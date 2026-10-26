@@ -4,8 +4,57 @@
 
 {% block content %}
 <section class="tarjeta">
-    <h2>Área de usuario</h2>
-    <p>Bienvenido, <strong>{{ session.get('username') }}</strong>. En el siguiente paso podrás registrar y consultar tus incidencias aquí.</p>
+    <h2>Registrar nueva incidencia</h2>
+    <form method="post" action="{{ url_for('mis_incidencias') }}" class="formulario">
+        <div class="campo">
+            <label for="observacion">Observación</label>
+            <textarea
+                id="observacion"
+                name="observacion"
+                rows="3"
+                placeholder="Describe qué problema informático tienes..."
+                required
+            ></textarea>
+        </div>
+        <div>
+            <button type="submit" class="boton boton-primario">Enviar incidencia</button>
+        </div>
+    </form>
+</section>
+
+<section class="tarjeta">
+    <h2>Mis incidencias registradas</h2>
+    {% if incidencias %}
+        <div class="tabla-contenedor">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Observación</th>
+                        <th>Resumen</th>
+                        <th>Categoría</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inc in incidencias %}
+                        <tr>
+                            <td>#{{ inc['id'] }}</td>
+                            <td>{{ inc['fecha'] }}</td>
+                            <td>{{ inc['observacion'] }}</td>
+                            <td>{{ inc['resumen'] }}</td>
+                            <td><span class="etiqueta etiqueta-cat-{{ inc['categoria'] }}">{{ inc['categoria'] }}</span></td>
+                            <td><span class="etiqueta etiqueta-prio-{{ inc['prioridad'] }}">{{ inc['prioridad'] }}</span></td>
+                            <td><span class="etiqueta etiqueta-estado-{{ inc['estado']|replace(' ', '-') }}">{{ inc['estado'] }}</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="texto-vacio">Todavía no has registrado ninguna incidencia.</p>
+    {% endif %}
 </section>
 {% endblock %}
-

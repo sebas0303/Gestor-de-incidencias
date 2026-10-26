@@ -62,3 +62,37 @@ def test_login_credenciales_invalidas(client):
     )
     assert resp.status_code == 401
 
+
+def test_registrar_incidencia_y_listar(client):
+    """El usuario puede registrar una incidencia con un único campo Observación y verla en su lista."""
+    client.post("/login", data={"username": "usuario", "password": "usuario123"})
+
+    observacion = "No puedo acceder a la carpeta compartida del departamento"
+    resp = client.post(
+        "/incidencias",
+        data={"observacion": observacion},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    texto = resp.data.decode("utf-8")
+    assert observacion in texto
+    assert "revisar" in texto
+    assert "abierta" in texto
+
+
+def test_aislamiento_incidencias_entre_usuarios(client):
+    """Criterio 3: Un usuario no puede ver las incidencias de otro usuario."""
+    # 'usuario' registra una incidencia privada
+    client.post("/login", data={"username": "usuario", "password": "usuario123"})
+    secreto = "Incidencia exclusiva del primer usuario"
+    client.post("/incidencias", data={"observacion": secreto}, follow_redirects=True)
+    client.get("/logout")
+
+    # 'maria' inicia sesión y consulta su listado de incidencias
+    client.post("/login", data={"username": "maria", "password": "maria123"})
+    resp = client.get("/incidencias")
+    assert resp.status_code == 200
+    texto_maria = resp.data.decode("utf-8")
+    assert secreto not in texto_maria
+
+

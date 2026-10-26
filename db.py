@@ -1,3 +1,4 @@
+from datetime import datetime
 import sqlite3
 from pathlib import Path
 from flask import current_app, g
@@ -77,4 +78,48 @@ def autenticar_usuario(username: str, password: str) -> sqlite3.Row | None:
     if usuario is not None and check_password_hash(usuario["password_hash"], password):
         return usuario
     return None
+
+
+def resumir_por_defecto(observacion: str) -> str:
+    """Genera un resumen provisional de máximo 15 palabras a partir de la observación."""
+    palabras = observacion.strip().split()
+    return " ".join(palabras[:15]) if palabras else "Sin observación"
+
+
+def crear_incidencia(
+    usuario_id: int,
+    observacion: str,
+    categoria: str = "revisar",
+    prioridad: str = "media",
+    resumen: str | None = None,
+    estado: str = "abierta",
+) -> int:
+    """Inserta una nueva incidencia en la base de datos y devuelve su ID."""
+    db = obtener_db()
+    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    resumen_final = (resumen or "").strip() or resumir_por_defecto(observacion)
+    cursor = db.execute(
+        """
+        INSERT INTO incidencias (fecha, usuario_id, observacion, categoria, prioridad, resumen, estado)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (fecha, usuario_id, observacion.strip(), categoria, prioridad, resumen_final, estado),
+    )
+    db.commit()
+    return cursor.lastrowid
+
+
+def obtener_incidencias_usuario(usuario_id: int) -> list[sqlite3.Row]:
+    """Devuelve únicamente las incidencias registradas por el usuario indicado."""
+    db = obtener_db()
+    return db.execute(
+        """
+        SELECT id, fecha, usuario_id, observacion, categoria, prioridad, resumen, estado
+        FROM incidencias
+        WHERE usuario_id = ?
+        ORDER BY id DESC
+        """,
+        (usuario_id,),
+    ).fetchall()
+
 
